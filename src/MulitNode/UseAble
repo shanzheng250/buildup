@@ -1,0 +1,25 @@
+亿万级流量
+1、高可用性
+    1）负载均衡和反向代理
+        nginx
+            上游服务器 upstream
+                ip weight 权重
+
+            负载均衡算法
+                轮训 默认算法
+                ip_hash 按照固定的ip
+                 一致性hash
+             upstream backend{
+                hash $uri
+                127.0.0.1 3
+                127.0.0.2 3
+             }
+
+            心跳机制
+
+            失败重试机制
+                max_fails
+                fail_timeout
+
+    2) 隔离术
+

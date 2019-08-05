@@ -1,0 +1,51 @@
+1、start
+微服务 --- springBoot
+@SpringBootApplication 启动注解
+    @SpringBootConfiguration   实体类注入
+    @EnableAutoConfiguration   --》 @Import --》 EnableAutoConfigurationImportSelector --》 默认加载META-INF\spring.factories配置文件key为org.springframework.boot.autoconfigure.EnableAutoConfiguration的内容
+        通过springFactoryLoader加载到springboot创建的容器中
+    @ComponentScan  扫描
+
+springFactoryLoader解析：
+    是springcore的功能，主要是把META-INF\spring.factories文件加载到容器中 这个原意是spi功能。
+    springBoot的EnableAutoConfiguration是key为spring.boot.enableautoconfiguration，value为需要注入容器的configuration
+
+
+
+SpringApplication执行流程
+    1、初始化   --- 其实初始化流程就是在以前的spring容器过程中使用"伪spi"拓展功能
+       a) 判断环境
+          classPath 存在org.springframework.web.context.ConfigurableWebApplicationContext 或者javax.servlet.Servlet web相关的则创建web相关的application
+          否则设置为正常的application
+
+       b）加载applicationContextInitializers
+          通过springFacotiesLoader加载所有的加载applicationContextInitializers
+
+       c）加载监听器
+          过springFacotiesLoader加载所有的加载applicationContextListener
+
+       d) 注解是否在main方法上
+
+
+    2、run
+      a）启动所有监听器
+      b) 注入加载applicationContextInitializers
+      c）注入加载加载@EnableAutoConfiguration 解析的所有configration对象
+
+
+
+
+SpringApplicationRunListener
+    自定义监听器写法
+    1、可以在SpringApplication中直接增加监听器，构造参数为SpringApplication 和main方法中的args
+    2、通过springFacotiesLoader加载机制在META-INF\spring.factories中写相应的自定义
+
+
+    spring-core 中的
+    ApplicationListener  -->异步处理 在onApplicationEvent监听事件方法上面增加@Async 配置Execoutors
+    ApplicationEvent    --> 自定义事件
+    ApplicationPublish   -->发布时间
+
+
+
+

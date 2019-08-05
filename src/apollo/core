@@ -1,0 +1,24 @@
+主要3个服务
+
+configservice -- 配置更改等等  默认是eureka server 自我注册
+                                ---- apolloplconfig
+adminservice  -- 处理界面请求
+
+portservice --- 界面请求   apolloportldb
+
+
+
+meterservice 主要是是eureka proxy
+用来从portservice  --》 转发到  adminservice
+client  --》 转发到 configservice
+
+
+消息传递实现
+       configservice 自动扫描releasMessage表。若有新增则通知所有的MessageListener
+       notice***** hanleMessage会发送到各个client端
+                   保存了一个客户端长轮训的通道map对象，发送message变更内容
+
+
+ 客户端发现
+    spring启动时，    ApplicationContextInitializer。配置环境变量
+    读取配置的url、appid等等信息，默认开启线程轮训服务端接口

@@ -1,0 +1,80 @@
+负载均衡   ribbon
+
+
+RestTemplate                   消息编码器以及序列化反序列化  HTTP消息装换器：HttpMessageConvertor
+--> InterceptingHttpAccessor   增加了list<ClientHttpRequestInterceptor> 链路处理初始化
+--> HttpAccessor               构造参数为httpClient 本质上还是一个httpclient
+
+    HTTP Client 适配工厂：ClientHttpRequestFactory
+    这个方面主要考虑大家的使用 HttpClient 偏好：
+            Spring 实现
+                SimpleClientHttpRequestFactory
+            HttpClient
+                HttpComponentsClientHttpRequestFactory
+            OkHttp
+                OkHttp3ClientHttpRequestFactory
+                OkHttpClientHttpRequestFactory
+
+
+
+
+1、@LoadBalanced 注解  ——》 META-INF目录
+    --》 @LoadBalancerAutoConfiguration ==》
+            @ConditionalOnClass({RestTemplate.class})
+            @ConditionalOnBean({LoadBalancerClient.class})
+            @EnableConfigurationProperties({LoadBalancerRetryProperties.class})
+
+            LoadBalancerAutoConfiguration自定义RetryInterceptorAutoConfiguration静态内部类实现以下功能
+                  RestTemplate增加了过滤器LoadBalancerInterceptor
+
+
+
+         当使用RestTemplate访问的时候，会被LoadBalancerInterceptor拦截，最后调用Interceptor.execute
+         根据请求服务名去选择服务实例（LoadBalancerClient.choose）并发送实际请求（LoadBalancerClient.execute）
+         默认使用ZoneAwareLoadBalancer均衡策略
+         先去获取zone，如果没有则随机获取regin下面的zone
+
+     LoadBalancerClient
+      ---》RibbonLoadBalancerClient choose方法为负载均衡的主要方法
+            -> ILoadBalancer调用choose
+            ->DynamicServerListLoadBalancer
+
+            配置信息 IRule负载均衡策略有很多实现类、IPing、IClientConfig
+
+            IRule
+            随机规则：RandomRule
+            最可用规则：BestAvailableRule
+            轮训规则：RoundRobinRule
+            重试实现：RetryRule
+            客户端配置：ClientConfigEnabledRoundRobinRule
+            可用性过滤规则：AvailabilityFilteringRule
+            RT权重规则：WeightedResponseTimeRule
+            规避区域规则：ZoneAvoidanceRule
+
+            使用IRule路由和选择规则
+            使用IPing定时轮训保持状态
+
+
+
+@LoadBalanced 注解增加在RestTemplate 实际上是使用 @LoadBalancerAutoConfiguration自定义拓展了RestTemplate
+1、增加了LoadBalancerInterceptor拦截器
+    @Bean
+    @ConditionalOnMissingBean
+    public RestTemplateCustomizer restTemplateCustomizer(final LoadBalancerInterceptor loadBalancerInterceptor) {
+        return (restTemplate) -> {
+            List<ClientHttpRequestInterceptor> list = new ArrayList(restTemplate.getInterceptors());
+            list.add(loadBalancerInterceptor);
+            restTemplate.setInterceptors(list);
+        };
+    }
+
+2、在调用RestTemplate的http请求时 会被LoadBalancerInterceptor的intercept拦截，即在发送请求时，会先调用LoadBalancerClient的exectue方法
+    public ClientHttpResponse intercept(final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution) throws IOException {
+        URI originalUri = request.getURI();
+        String serviceName = originalUri.getHost();
+        Assert.state(serviceName != null, "Request URI does not contain a valid hostname: " + originalUri);
+        return (ClientHttpResponse)this.loadBalancer.execute(serviceName, this.requestFactory.createRequest(request, body, execution));
+    }
+
+
+3、LoadBalancerClient 默认实现类RibbonLoadBalancerClient

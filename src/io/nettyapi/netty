@@ -1,0 +1,158 @@
+1、netty
+inbound 是和add顺序一致 先socketChannel.read() -> 顺序handle -> TailContext.ChannelRead().releaseMsg
+outbound 触发顺序是 逆序handle -> HeadContext.SocketChannel.write()
+
+
+|--------|        |--------|       |-------|       |-------|         |--------|        |--------|
+| Encode |  ----- | Decode | ----- |  IN 1 | ----- |  IN 2 |  ------ |  OUT 1 | -------|  OUT 2 |
+|--------|        |--------|       |-------|       |-------|         |--------|        |--------|
+
+
+
+
+byteBuf
+---->对byteBuffer的优化
+
+原有的byteBuffer的缺点
+1、操作复杂
+    读取时需要flip()、flush等操作
+
+    读取是
+    *---------------------------------------------------------------*
+    |                                                               |
+    |                                                               |
+    *---------------------------------------------------------------*
+    0                                                            capacity
+    postion
+    limit
+
+    写入状态
+    *----------------------|-----------------------------------------*
+    |                      |                                         |
+    |                      |                                         |
+    *----------------------|-----------------------------------------*
+    0                     postion                                   limit
+                                                                    capacity
+    -----> flip() 状态
+    *----------------------|-----------------------------------------*
+    |                      |                                         |
+    |                      |                                         |
+    *----------------------|-----------------------------------------*
+   postion                  limit                                   capacity
+
+ 2、定长 没法动态拓展
+
+
+ bytebuf优点：
+ 1、改为读写双指针 读指针一定大于等于写指针
+    可读区域为读指针到写指针直接的空间
+    可写区域为写指针到capcity之间的空间
+
+ 2、写入数据时判断是否需要动态拓展
+ byteBuf的动态拓展，小于阈值前*2 然后进行位运算
+
+
+ 主要的api方法
+ 1、discardReadBytes 内存重新复用。通过内存复制使用，过多的使用会导致性能的下降
+ 2、readableBytes 可读长度
+ 3、writableBytes 可写长度
+ 4、clear 指针”归零“
+ ......
+
+
+ byteBuf 几种实现
+ 1、heap 优点：分配回收速度快 被jvm管理 缺点：需要对复制一次 对性能有影响
+ 2、directbyte 减少一次复制 堆外内存 管理不便
+
+ 使用：通信 io使用堆外内存  编解码使用堆上内存
+
+ a、内存池
+ b、不使用内存池
+
+          byteBuf
+            |
+            |
+        AbstractByteBuf
+            |
+            |
+    AbstractReferenceCountedByteBuf
+   （引用计数--cas实现,用来跟踪对象的生存和回收）
+            |
+            |
+     |--------------|--------------|---------------|
+     |              |              |               |
+    unpoolHeap..   poolHeap      unpoolDirect   poolDirect
+
+
+ 工具类：
+    ByteBufHolder 包装byteBuf .....实际上是ByteBuf的定制化实现
+    ex:WebSocketFrame
+       PingWebSocketFrme
+       DefaultHttp2GoAwayFrame
+
+
+
+2、channel和unsafe
+channel read() 读取数据到第一个inbound缓存区 成功读取触发 channelHandler.channelRead()
+channel write()  通过channelPipeline 写入目标channel 只是将消息发送到环形数组长，flush才会被写入channel 发送给对方
+channel flush() 将写入环形数组的消息写入到目标channel中，发送给对方
+channel eventLoop() 档期多路复用
+--抽象类
+AbstractChannel
+ writeAndFlush() 等于write后执行flush()
+ connect()
+ bind()
+
+
+  Channel
+     |
+   __|_________________
+  |                     |
+Severchannel        AbstractChannel
+  |                     |
+  |                 AbstractNioChannel  -- java Nio Selector
+  |                     |
+SeversocketChannel  AbstractNioMessageChannel   -- SelectorKey 的循环使用
+        ______|         |
+       |                |
+     NioSeverSocketChannel
+
+******** channel 进行io操作时，会产生事件，事件驱动在channelPipeline上面传播，由对应的channelHandle进行拦截和处理
+
+
+3、channelPipeline和channelHandler
+channelPipeline是channelHandle的容器，负责对channelHandle的事件管理
+ 类似  sevlet和 filter
+ netty中分为inbound事件和outbound事件
+ inbound事件i/o线程触发，比如TCP链路建立事件、链路关闭、读事件、异常通知事件
+ 先从socketChannel.read() -> 顺序handle
+
+ outbound事件，从用户i/o触发  比如用户连接、消息发送以及绑定等
+
+channelPipeline对channelHandler的管理
+****** channelPipeline线程安全  sychronized关键字 添加是对指针节点的修改
+****** channelHandler线程不安全
+
+
+
+
+4、NioEventLoopGroup 和NioEventLoop
+
+NioEventLoop
+ 1、io读写
+ 2、系统任务
+ 3、定时任务
+
+  获取Selector，默认是jdk自带的选择器。如果开启优化，则使用反射把对应的优化后的selector等对象进行替换
+
+***************消除空轮训bug*********************
+
+1、select周期统计
+2、发生一次空的select进行计数
+3、在一定周期内发送256次后进行rebulid 即销毁旧的selector 创建新的selector
+把之前的channel注册到新的selector上，然后关闭旧的selector
+
+
+
+5、
+

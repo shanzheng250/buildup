@@ -1,0 +1,25 @@
+命令模式
+HystrixCommand
+HystrixObservableCommand
+大量使用rxjava
+
+
+熔断器
+主要控制器
+熔断决策和状态记录
+
+HystrixCircuitBreaker
+    isOpen 断路器是否打开
+
+    3个静态内部类
+    1：Factory Hystrix命令和HystrixCircuitBreaker的关系集合
+    2：NoOpCircuitBreaker 啥都不做
+    3：HystrixCircuitBreakerImpl
+
+
+
+依赖隔离 -- 线程池
+请求合并
+请求缓存
+
+

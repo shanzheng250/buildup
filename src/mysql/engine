@@ -1,0 +1,7 @@
+存储引擎
+    插拔式
+    csv   excel修改成csv，快速的入库。只支持select和insert，可以直接在文本修改
+    archive  压缩文件，比innodb的存储空间少百分之90以上，可以用作数据备份
+    memeory  内存级别 基本被redis等取缔
+    myisam   表锁，查询快 不支持事物
+    innodb    支持事物、行锁、支持mvcc

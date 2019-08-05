@@ -1,0 +1,62 @@
+服务注册中心
+
+
+高可用 实际上是把自己作为服务注册到其他eureka
+
+服务客户端
+    1、注册服务
+    2、服务下架
+    3、服务续约
+    4、获取其他服务的地址
+
+
+1、配置注册
+    @EnableDiscoveryClient --> EnableDiscoveryClientImportSelector 利用spi注入对象
+    读取eureka-client jar包下面的spring.factories里面内容，并注入到spring容器里面
+
+    主要扫描类 EurekaClientConfigServerAutoConfiguration
+    @ConditionalOnClass({EurekaInstanceConfigBean.class, EurekaClient.class, ConfigServerProperties.class})
+
+    需要注解内的三个类先行产生
+    a)EurekaInstanceConfigBean  实现了读取项目ip、instance_id、端口号、healthurl等等
+    b)EurekaClient  eureka客户端的主要功能，比如获取服务url、注册服务等等                                        这里利用了谷歌@ImplementedBy(DiscoveryClient.class)
+        DiscoveryClient
+                         this.initScheduledTasks(); 详解构造方法内初始化各种线程池，然后执行以下操作
+                        1、cacheRefreshExecutor 定时刷新服务列表，并缓存本地30s
+                        2、heartbeatExecutor 定时心跳检测
+                        3、start() 注册服务到注册中心
+
+        注册服务: DiscoveryClient里面的register()
+        使用的是http请求，将元数据封装成instanceInfo并返回响应状态
+
+        服务续约:DiscoveryClient里面的sendHeartBeat()
+        使用的是http请求，定时发送心跳请求
+
+        获取其他服务的地址 :DiscoveryClient里面的getInstanceInternal()
+        使用的是http请求，获取其他服务地址接口.先判断本地，然后没有则调用远程
+
+        服务下架:本质就是取消服务
+
+
+
+服务端
+    ApplicationResource 接受客户端的restful请求
+        addInstance() 注册  --> 调用 InstanceRegistry
+
+
+
+    1、服务注册保存
+
+        @EnableDiscoveryServer --> EurekaServerInitializerConfiguration 利用spi注入对象
+
+        EurekaClientConfig通过配置文件 配置用户名、密码、ip、port
+
+        EurekaController 展示界面
+
+        InstanceRegistry 处理客户端发送的请求  比如注册、下线等待 --》抽象父类实际操作 AbstractInstanceRegistry
+
+        服务注册实际上是在ConcurrentHashMap里面的保存的结构为ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry = new ConcurrentHashMap(); 外层的string为项目名称，内层是standardid
+
+     2、服务同步
+        EureKa相互注册，a接到服务注册之后，在集群中进行服务转发
+

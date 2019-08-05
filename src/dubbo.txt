@@ -1,0 +1,77 @@
+ExtensionLoader
+	1、核心方法		
+		ExtensionLoader.getExtensionLoader(A);
+		A必须为接口，A必须有注解(@SPI)
+	    Map类缓存获取
+		
+		getExtension(name)
+		
+		->createExtension(name)
+		返回是构造函数参数是该类的类。是一种装饰器模式
+		
+		
+		getAdaptiveExtension()  
+		 双重检测锁存取map
+		 
+		-> injectExtension()属性set方法自动注入
+		-> createAdaptiveExtension() 
+		-> getExtensionClasses() -> loadExtensionClasses() -> loadDirectory() ->loadClass() 
+			加载文件夹下面的类进入map
+			META-INF/dubbo/
+			META-INF/services/
+			META-INF/dubbo/internal/	
+			必须类上面有注解(@Adaptive)
+			或者构造函数参数为该类
+			得到对象为extensionClasses的map对象 name:Class		
+		
+		-> createAdaptiveExtensionClass() ->动态compiler -> protocol$adapter
+		
+ServiceConfig
+   -> export() 
+   -> doExport()  各种config文件里面的参数进行配置解析	
+   -> doExportUrls()
+   -> loadRegistries()  把配置转换为url，默认是dubbo协议。如果配置里面有protocol配置，则按照protocol配置装配url
+   
+   
+   核心代码
+   Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
+   DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
+
+   Exporter<?> exporter = protocol.export(wrapperInvoker);
+   exporters.add(exporter);
+		
+   proxyFactory默认是	StubProxyFactoryWrapper(JavassistProxyFactory)
+   getInvoker() -> JavassistProxyFactory类中的wrapper.invokeMethod()  -> makeWrapper 服务类的重写包装   ->
+   protocol.export() ->openServer()	-> ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type) HeaderExchangeServer -> 
+   ExtensionLoader.getExtensionLoader(Transporter.class).getAdaptiveExtension() -> 底层是netty 发布服务
+		
+Invoker	
+	directory	
+		
+		
+		
+		
+ExchangeServer:
+
+
+
+Transporters:
+
+
+
+ReferenceBean：
+	->createProxy -> refprotocol.refer() 得到Invoker   -> AbstractClusterInvoker
+
+
+RouterFactory	
+	
+
+Cluster  -> 默认FailoverCluster
+
+
+Registerdirectory -> 服务提供者缓存到本地当有所变化的时候会通知更新  ->等同于 List<Invoker>  本地缓存为methodInvokerMap
+		-> notify 注册中心变化通知 保存信息到本地缓存为methodInvokerMap  ->toMethodInvokers 将List<Invoker>转换为method和Invoker的Map关系 
+		-> dolist  服务提供列表 ->
+		
+		
+notify ->refreshInvoker 更新服务
