@@ -1,0 +1,24 @@
+provider 设置一个异常和consumer不在一个包内 consumer接收不到该异常 只会接收到runtimeExcepion
+
+
+1.如果是checked异常，直接抛出.很明显,我们的HelloException是RuntimeException,不符合
+　　
+2.在方法签名上有声明，直接抛出.很明显,我们接口并未声明该异常,不符合
+　　
+3.异常类和接口类在同一jar包里，直接抛出.很明显,我们的异常类是在common.jar的,接口是在api.jar的,不符合
+　　
+4.是JDK自带的异常，直接抛出.很明显,这个HelloException是我们自定义的,不符合
+　　
+5.是Dubbo本身的异常(RpcException)，直接抛出.很明显,这个HelloException是我们自定义的,和RpcException几乎没有半毛钱关系.
+　　
+6.否则，包装成RuntimeException抛给客户端.因为以上5点均不满足,所以该异常会被包装成RuntimeException异常抛出(重要)
+　　
+这也就是为什么我们catchHelloException是catch不到的,因为他包装成RuntimeException了
+　　
+Dubbo为什么这么设计　　
+　　
+其实Dubbo的这个考虑,是基于序列化来考虑的.你想想,如果provider抛出一个仅在provider自定义的一个异常,那么该异常到达consumer,明显是无法序列化的.
+　　
+如何解决
+　　
+既然都知道了原理了,那么很好解决,我随便列举一下,比如从规范上要求业务方接口声明throw HelloException 或者该异常和接口类在同一个jar包中

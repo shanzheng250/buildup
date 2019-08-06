@@ -1,0 +1,14 @@
+对于Filter的划分，根据其面向的对象不同，可以分为provider端和consumer端；根据其所作用的范围的不同，则可以分为单个服务过滤器（单个service或reference）和全局过滤器（整个provider或consumer）。Filter的指定方式主要有三种：
+
+1、在<dubbo:service filter=""/>或<dubbo:reference filter=""/>标签中使用filter属性来指定具体的filter名称，这种使用方式的作用级别只针对于所指定的某个provider或consumer；
+2、在<dubbo:provider filter=""/>或<dubbo:consumer filter=""/>标签中使用filter属性来指定具体的filter名称，这种使用方式的作用级别针对于所有的provider或consumer；
+3、在所声明的实现了Filter接口的类上使用@Activate注解来标注，并且注解中的group属性指定为provider或consumer。
+
+
+最终是将其抽象为一个Invoker进行的，而在抽象的过程中，Dubbo会获取配置文件中指定的所有实现了Filter接口的类，然后根据为其指定的key名称，将其组织成一条链。具体的代码在ProtocolFilterWrapper中
+
+
+这里的整个动作其实就是对链的一个组装，比如通过上面的步骤获取到了三个Filter：A、B和C。
+在这里会为每一个子类都声明一个Invoker对象，将该对象的invoke()方法委托给链的下一个节点。
+这样，通过不断的委托动作，在遍历完成之后，就会得到一个Invoker的头结点，最后将头结点返回。
+这样就达到了组装Invoker链的目的
