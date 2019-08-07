@@ -1,0 +1,19 @@
+maven报错为 Could not find artifact XXXX
+
+
+ven多模块项目jar包引用问题：
+
+Failed to execute goal on project xxx-service: Could not resolve dependencies for project com.xxx:xxx-service:jar:1.0.0: Failed to collect dependencies at com.yyy:yyy-facade:jar:1.0.0: Failed to read artifact descriptor for com.yyy:yyy-facade:jar:1.0.0: Failure to find com.yyy:yyy:pom:1.0.0 in http://host:ip/nexus/public/ was cached in the local repository, resolution will not be reattempted until the update interval of test-mirrorId has elapsed or updates are forced -> [Help 1]
+
+　　这个是项目中出现的一个问题，多组件的项目，统一进行了版本升级，但是都没有进行发布(maven deploy)，因此私服上面没有最新的jar包，只要出现有依赖的组件jar包（一般是接口层），就会导致发布失败。于是在就先直接把接口层进行打包发布。此时私服上面已经有了最新的版本包，但是其他组件在发布时还是报了了这个错。这是没有先把父pom进行打包，可参考SF：https://stackoverflow.com/questions/6642146/maven-failed-to-read-artifact-descriptor。
+
+ This problem can occur if you have some child projects that refer to a parent pom and you have not installed from the parent pom directory (run mvn install from the parent directory). One of the child projects may depend on a sibling project and when it goes to read the pom of the sibling, it will fail with the error mentioned in the question unless you have installed from the parent pom directory at least once.
+
+大致意思：如果你有子项目引用了父项目的POM，但没有在父项目POM目录下执行安装操作(父目录下执行mvn install)，这个问题就会出现。当一个子模块可能会依赖一个兄弟子模块而且去读取兄弟子模块的pom时，除非在父项目POM目录下至少执行一次安装，否则就会读取失败，即出现上述错误。
+
+　　建议和总结：
+
+先部分升级打包，再升级其余部分
+或者把引用的版本降低，先将本组件的最新版本进行发布（父pom那一层全部打包），再更新引用最新的版本
+或者直接把子模块的引入先注释掉，直接把父pom先打包即可，后续可单独再打包（接口包之类的，暂测可行，但是非长久之计）。
+另外也有可能是jar包下载错误，可以先把本地maven的jar包缓存先删除掉，再直接项目右键【Maven==》》Update Project==》》Force Update of Snapshots/Release（勾选上）】，强制更新jar包引用
