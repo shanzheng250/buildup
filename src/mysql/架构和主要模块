@@ -1,0 +1,19 @@
+mysql主要架构
+1、管理模块，进行用户权限管理--》
+2、缓存模块、解释器、优化器。将sql解析为操作树再进行优化
+3、存储引擎，innodb、mysam、cvs、memory
+
+对于innodb来说，
+请求首先到buffer pool中，然后有后台的线程进行存储到磁盘中
+在buffer pool中有change buffer 用来快速的进行热点数据变化
+还有logger buufer 这里是用来搬运到redo log和undo log
+
+innodb里有说法为wal write ahead log 即是预写日志，先写日志后刷磁盘
+把日志从logger bufer中写到redo 日志中这是为了防止崩溃。
+
+已经写了磁盘 为啥还要有redo log 呢？
+这是因为redo log是顺序写入，记录是数据库操作，而磁盘是随机io 操作的慢。这里是为了提升吞吐量。
+写入redo log实际使用的事2pc 先进行prepare 然后确认后再进行commit这样保证数据持久性
+
+undo log是为了保证数据原子性
+
