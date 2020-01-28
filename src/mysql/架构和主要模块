@@ -13,7 +13,7 @@ innodb里有说法为wal write ahead log 即是预写日志，先写日志后刷
 
 已经写了磁盘 为啥还要有redo log 呢？
 这是因为redo log是顺序写入，记录是数据库操作，而磁盘是随机io 操作的慢。这里是为了提升吞吐量。
-写入redo log实际使用的事2pc 先进行prepare 然后确认后再进行commit这样保证数据持久性
+写入redo log实际使用的事2pc 先进行prepare 然后确认后binlog保存成功则再进行commit这样保证数据持久性
 
 undo log是为了保证数据原子性
 
