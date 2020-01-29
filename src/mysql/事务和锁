@@ -1,0 +1,62 @@
+1、事务特性：ACID 原子性 一致性 隔离性 永久性
+
+实现事务的主要方式
+1、锁
+2、mvcc
+
+
+事务的三个问题
+P1 ： 脏读  --》事务1 select name from user where id = 1
+                事务2 update user set name = “li” where id = 1 未提交
+                这时事务1看到的事未提交的脏数据，若2回滚则查询为脏数据
+P2： 不可重复读 --》 事务1  select name from user where id = 1
+                     事务2 update user set name = “li” where id = 1  已经提交
+                     事务1 select name from user where id = 1
+                     这时事务1两次查询的结果不一致
+P3： 幻读 --》事务1 select count（name） from user
+             事务 2  insert into user （“li”）
+             事务1 select count（name） from user
+             这时事务1看到的结果会多出一条记录
+
+
+------------------------>根据上面可能出现的问题 数据库进行了标准化的规则《------------------------
+read uncommit 读不提交 啥都解决不了
+read commit 读提交 解决不了P2 P3  oracle默认的事务级别
+read reapeat 可重读 解决不了幻读
+serialzible 串行化
+
+---------------------------------------innodb的锁--------------------------------------
+4种行锁、3种锁模式
+1、share lock  s锁 共享锁
+2、exclued lock   e锁 拍他锁  select for update就是这种锁
+3、意向共享锁 意向拍他锁
+
+1、record lock 记录锁  就锁一个记录
+2、grap lock 间隙锁  锁范围
+3、邻键锁 = 1 + 2
+
+
+innodb锁的事什么？
+1、首先 若查询有主键则锁的是主键列
+2、查询表没有主键 有唯一索引并且不为空 则锁该行
+3、若啥都没有 只有默认的_rowid 就锁该行
+
+innodb没有表锁 表锁就是所有的行锁锁起来的
+
+------------------------------------------innodb的事务级别-----------------------------------------------
+RR 级别 但是避免了幻读
+首先通过MVCC模式 可以实现RC
+MVCC模式 就是在每条记录上有隐藏的行，1）创建时的版本id 2）删除的版本id
+默认查询修改等操作没法查询比当前事务高的事务版本id。因此低版本的看不到高版本的实现了脏读和不可重读
+这里使用了邻键锁进行锁定查询列 防止在查询新增列避免了幻读
+
+
+
+
+
+
+
+
+
+
+
