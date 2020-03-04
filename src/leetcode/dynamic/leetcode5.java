@@ -53,6 +53,36 @@ public class leetcode5 {
     }
 
 
+    // dp 破解反转一个字符串求最大的相同字符串 暴力破解法
+//    public static String getChildStr1(String s){
+//
+//        if ("".equals(s)){
+//            return "";
+//        }
+//
+//        char c [] = s.toCharArray();
+//
+//        for (int i =0;i<c.length-1;i++){
+//
+//            int max = 0;
+//
+//            for (int j=0;j<c.length-1;j++){
+//
+////                if ()
+//
+//
+//            }
+//
+//        }
+//
+//
+//
+//    }
+
+
+
+
+
     public static void main(String[] args) {
         System.out.println("leetcode5.main----->" + leetcode5.getChildStr("adda"));
     }
