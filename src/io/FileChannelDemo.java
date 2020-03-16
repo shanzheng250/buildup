@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * @Description:
@@ -16,7 +17,11 @@ import java.nio.charset.Charset;
  */
 public class FileChannelDemo {
 
+
     public static void main(String[] args) throws IOException {
+
+
+
 
         File f = new File("C://Users//Administrator//Desktop//1.txt");
 

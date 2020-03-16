@@ -23,6 +23,7 @@ public class NettyResolve {
 
     // byteBuf --> 动态拓展，双指针，池化技术、堆内存和直接内存
     // 引用计数 目的是取消分配失去引用的资源，使用的事AtomicReferenceFieldUpdater和volatile来进行线程安全的判断
+    //          通过引用计数器及时申请释放不再引用的对象，降低了GC频率
     // 池化技术 框架会预分配内存，然后分为trunk 和 page page是16K大小，然后进行bytebuf分配的时候是使用了树型结构，page存储树的编号，然后随机获取未被分配的
 
 
@@ -41,6 +42,6 @@ public class NettyResolve {
     // promice 就是增加future的写能力。原来主要能力是get 现在可以setSuccess之类的操作
 
 
-    // netty是一个高性能无锁框架
+    // netty是一个高性能无锁框架，
 
 }
